@@ -113,7 +113,7 @@ function updateHero(){
     if (isset($about_me)){
         $updates .= "about_me = '$about_me'";
     }
-    if (isset($biography){
+    if (isset($biography)){
         $updates .= "biography = '$biography'";
     }
     if (!isset($index)){

@@ -10,35 +10,38 @@ $username = "root";
 $password = "";
 $dbName = "superheroes";
 
-function connectDb(){
+function connectDb()
+{
     global $servername, $username, $password, $dbName;
     $conn = new mysqli($servername, $username, $password, $dbName);
 
-    if($conn->connect_error){
+    if ($conn->connect_error) {
         die("Connection failed." . $conn->connect_error);
     }
-    
+
     return $conn;
 }
 
-function queryDb($conn, $sql, $successMessage){
-    if ($conn->query($sql) === TRUE){
+function queryDb($conn, $sql, $successMessage)
+{
+    if ($conn->query($sql) === TRUE) {
         print_r($successMessage);
     } else {
         print_r("ERROR: " . $sql . "\n" . $conn->error);
     }
 }
 
-function queryDbSelect($conn, $sql){
+function queryDbSelect($conn, $sql)
+{
     $result = $conn->query($sql);
-    if ($result->num_rows > 0){
-        while($row = $result->fetch_assoc()){
+    if ($result->num_rows > 0) {
+        while ($row = $result->fetch_assoc()) {
             print_r(
                 "ID: " . $row["id"] . "\n" .
-                "Name: " . $row["name"] . "\n" .
-                "About Me: " . $row["about_me"] . "\n" .
-                "Biography: " . $row["biography"] . "\n" .
-                "Image: " . $row["image_url"] . "\n\n"
+                    "Name: " . $row["name"] . "\n" .
+                    "About Me: " . $row["about_me"] . "\n" .
+                    "Biography: " . $row["biography"] . "\n" .
+                    "Image: " . $row["image_url"] . "\n\n"
             );
         }
         print_r($result);
@@ -48,26 +51,27 @@ function queryDbSelect($conn, $sql){
 }
 
 
-function createHero(){
+function createHero()
+{
     $errors = "";
 
-    if (!isset($_GET["name"])){
+    if (!isset($_GET["name"])) {
         $errors .= "name ";
     }
-    if (!isset($_GET["about_me"])){
+    if (!isset($_GET["about_me"])) {
         $errors .= "about_me ";
     }
-    if (!isset($_GET["biography"])){
+    if (!isset($_GET["biography"])) {
         $errors .= "biography ";
     }
-    if (strlen($errors) > 0){
+    if (strlen($errors) > 0) {
         print_r("ERROR 422: Missing " . $errors . ".");
         return;
     }
 
     $name = $_GET["name"];
-    $about_me = $_GET["about_me"]; 
-    $biography = $_GET["biography"]; 
+    $about_me = $_GET["about_me"];
+    $biography = $_GET["biography"];
     $image = isset($_GET["image"]) ? $_GET["image"] : null;
 
     $sql = "INSERT INTO heroes (name, about_me, biography, image_url)
@@ -76,66 +80,81 @@ function createHero(){
     queryDb(connectDb(), $sql, "Hero successfully created.");
 }
 
-function readHero(){
+function readHero()
+{
 
-    if (!isset($_GET["index"])){
+    if (!isset($_GET["index"])) {
         print_r("ERROR 422: Missing index.");
         return;
     }
     #echo "Read Heroes Fired!";
     $hero = $_GET['index'];
-    if($hero === "all"){
+    if ($hero === "all") {
         $sql = "SELECT * FROM heroes";
         #$message = "Read all heroes.";
     } else {
         $sql = "SELECT * FROM heroes WHERE id = $hero";
         #$message = "Read Hero" . $hero . ".";
     }
-# TODO: error check in case hero does not match id or all.
-# TODO: check if id is within bounds.
+    # TODO: error check in case hero does not match id or all.
+    # TODO: check if id is within bounds.
 
     queryDbSelect(connectDb(), $sql);
 }
 
-function updateHero(){
+function updateHero()
+{
     print_r("Update Hero Fired!");
     $updates = "";
+    try {
+        // check to see if the index in the get array exists
+        // if it does modify the query
+        $index = $_GET["index"];
+        var_dump($index);
 
-    $index = $_GET["index"];
-    $name = $_GET["name"];
-    $about_me = $_GET["about_me"]; 
-    $biography = $_GET["biography"]; 
-    $image = $_GET["image_url"] ? $_GET["image_url"] : null;
-
-    if (isset($name)){
-        $updates .= "name = '$name'";
-    }
-    if (isset($about_me)){
-        $updates .= "about_me = '$about_me'";
-    }
-    if (isset($biography)){
-        $updates .= "biography = '$biography'";
-    }
-    if (!isset($index)){
-        print_r("ERROR 422: Index is required.");
-        return;
-    } else {
-        $sql = "UPDATE heroes 
-        SET '$updates'
-        WHERE id='$index'";
-
-        queryDb(connectDb(), $sql, "Hero successfully updated.");
+        if (isset($_GET["name"])) {
+            $updates .= "name = '" . $_GET['name'] . "', ";
+        }
+        if (isset($_GET["about_me"])) {
+            $updates .= "about_me = '" . $_GET['about_me'] . "', ";
+        }
+        if (isset($_GET["biography"])) {
+            $updates .= "biography = '" . $_GET['biography'] . "', ";
+        }
+        if (isset($_GET["image_url"])) {
+            $updates .= "image_url = '" . $_GET['image_url'] . "', ";
+        }
+        $updates = rtrim($updates, ", ");
+        if (!isset($index)) {
+            print_r("ERROR 422: Index is required.");
+            return;
+        } else {
+            # "UPDATE heroes SET about_me = 'The Caped Crusader', WHERE id=7"
+            $sql = "UPDATE heroes SET $updates WHERE id=$index";
+            var_dump($sql);
+            queryDb(connectDb(), $sql, "Hero successfully updated.");
+        }
+    } catch (Exception $e) {
+        echo 'Caught exception: ',  $e->getMessage(), "\n";
     }
 }
 
-function deleteHero(){
+function deleteHero()
+{
     print_r("Delete Hero Fired!");
+    if ($_GET["index"] < 1 && isset($_GET["index"])){
+        print_r("ERROR 422: Index is required.");
+    } else {
+        $index = $_GET["index"];
+        $sql = "DELETE FROM heroes WHERE id=$index";
+        queryDb(connectDb(), $sql, "Hero successfully deleted.");
+    }
 }
 
 
 
-if (isset($_GET["action"])){
-    switch($_GET["action"]){
+if (isset($_GET["action"])) {
+    switch ($_GET["action"]) {
         case "createHero":
             createHero();
             break;

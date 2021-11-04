@@ -10,6 +10,9 @@ $username = "root";
 $password = "";
 $dbName = "superheroes";
 
+
+$heroObj = [];
+
 function connectDb()
 {
     global $servername, $username, $password, $dbName;
@@ -31,6 +34,22 @@ function queryDb($conn, $sql, $successMessage)
     }
 }
 
+function queryDbInsert($conn, $sql, $successMessage)
+{
+    $result = $conn->query($sql);
+    if ($result->num_rows > 0) {
+        print_r($successMessage);
+        while ($row = $result->fetch_assoc()) {
+            $heroObj["id"] = $row["id"];
+            $heroObj["name"] = $row["name"];
+            $heroObj["about_me"] = $row["about_me"];
+            $heroObj["image_url"] = $row["image_url"];
+        }
+    } else {
+        print_r("ERROR: " . $sql . "\n" . $conn->error);
+    }
+}
+
 function queryDbSelect($conn, $sql)
 {
     $result = $conn->query($sql);
@@ -44,15 +63,15 @@ function queryDbSelect($conn, $sql)
                     "Image: " . $row["image_url"] . "\n\n"
             );
         }
-        print_r($result);
+        #print_r($result);
     } else {
         print_r("0 results.");
     }
 }
 
-
 function createHero()
 {
+    global $heroObj;
     $errors = "";
 
     if (!isset($_GET["name"])) {
@@ -64,6 +83,9 @@ function createHero()
     if (!isset($_GET["biography"])) {
         $errors .= "biography ";
     }
+    if (!isset($_GET["ability"])) {
+        $errors .= "ability ";
+    }
     if (strlen($errors) > 0) {
         print_r("ERROR 422: Missing " . $errors . ".");
         return;
@@ -72,12 +94,20 @@ function createHero()
     $name = $_GET["name"];
     $about_me = $_GET["about_me"];
     $biography = $_GET["biography"];
+    $ability = $_GET["ability"];
     $image = isset($_GET["image"]) ? $_GET["image"] : null;
 
     $sql = "INSERT INTO heroes (name, about_me, biography, image_url)
     VALUES ('$name', '$about_me', '$biography', '$image')";
 
-    queryDb(connectDb(), $sql, "Hero successfully created.");
+    queryDbInsert(connectDb(), $sql, "Hero successfully created.");
+    
+    if (isset($heroObj)) {
+        $lastId = $heroObj["id"];
+        $sql = "INSERT INTO abilities (hero_id, ability_id) VALUES ($lastId, $ability)";
+        queryDb(connectDb(), $sql, "Ability successfully added.");
+    }
+
 }
 
 function readHero()
@@ -142,7 +172,7 @@ function updateHero()
 function deleteHero()
 {
     print_r("Delete Hero Fired!");
-    if ($_GET["index"] < 1 && isset($_GET["index"])){
+    if ($_GET["index"] < 1 || !isset($_GET["index"])) {
         print_r("ERROR 422: Index is required.");
     } else {
         $index = $_GET["index"];
@@ -150,8 +180,6 @@ function deleteHero()
         queryDb(connectDb(), $sql, "Hero successfully deleted.");
     }
 }
-
-
 
 if (isset($_GET["action"])) {
     switch ($_GET["action"]) {
